@@ -2,6 +2,7 @@
 
     <div class="row">
         <form role="form" action="/register/submit" method="post" enctype="multipart/form-data">
+            <input name="_csrf_token" type="hidden" value="{{ csrf_token() }}">
             <div class="task-box col-md-6 col-md-offset-3">
                 <h1>Register</h1>
                 <br/>

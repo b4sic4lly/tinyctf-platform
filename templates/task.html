@@ -19,6 +19,8 @@
         <a href="{{ url_for('static', 
           filename='files/'+task.file) }}">{{ task.file }}</a>
       </p>
+      <p id="flag-output"></p>
+      <input name="_csrf_token" id="_csrf_token" type="hidden" value="{{ csrf_token() }}">
       <input id="flag-input" type="text" class="form-control" 
         placeholder="{% if task_done %}{{ lang.task.success }}{% 
         else %}{{ lang.task.placeholder }}{% endif %}">

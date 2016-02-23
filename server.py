@@ -7,6 +7,8 @@ import json
 import random
 import time
 import re
+import hashlib
+import os
 
 from base64 import b64decode
 from functools import wraps
@@ -19,6 +21,7 @@ from flask import render_template
 from flask import request
 from flask import session
 from flask import url_for
+from flask import abort
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -209,12 +212,14 @@ def task(category, score):
         user=user, category=category, task=task, score=score)
     return make_response(render)
 
-@app.route('/submit/<category>/<score>/<flag>')
+@app.route('/task/submit', methods = ['POST'])
 @login_required
-def submit(category, score, flag):
+def submit():
     """Handles the submission of flags"""
 
-    print "ok"
+    category = request.form['category']
+    score = request.form['score']
+    flag = request.form['flag']
 
     login, user = get_user()
 
@@ -222,7 +227,8 @@ def submit(category, score, flag):
     flags = get_flags()
     task_done = task['id'] in flags
 
-    result = {'success': False}
+    result = {'success': False, 'csrf': generate_csrf_token() }
+
     if not task_done and task['flag'] == b64decode(flag):
 
         timestamp = int(time.time() * 1000)
@@ -274,6 +280,21 @@ def logout():
     del session['user_id']
     return redirect('/')
 
+@app.before_request
+def csrf_protect():
+    if request.method == "POST":
+        token = session.pop('_csrf_token', None)
+        if not token or token != request.form.get('_csrf_token'):
+            abort(400)
+
+def some_random_string():
+    return hashlib.sha256(os.urandom(16)).hexdigest()
+
+def generate_csrf_token():
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = some_random_string()
+    return session['_csrf_token']
+
 @app.route('/')
 def index():
     """Displays the main page"""
@@ -315,6 +336,8 @@ if __name__ == '__main__':
             score INTEGER, 
             timestamp BIGINT, 
             PRIMARY KEY (task_id, user_id))''')
+
+    app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
     # Start web server
     app.run(host=config['host'], port=config['port'], 
