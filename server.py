@@ -260,6 +260,19 @@ def scoreboard():
         login=login, user=user, scores=scores)
     return make_response(render) 
 
+@app.route("/scoreboard.json")
+def scoreboard_json():
+    """Displays data for ctftime.org in json format"""
+    scores = db.query('''select u.username as team, ifnull(sum(f.score), 0) as score, ifnull(max(timestamp), 0) as lastAccept from users
+                        u left join flags f on u.id = f.user_id where u.hidden = 0 group by u.username
+                        order by score desc, lastAccept asc''')
+    scores = list(scores)
+    for i, s in enumerate(scores):
+        s['pos'] = i + 1
+        
+    data = map(dict,scores) 
+    return jsonify({'standings':data})
+
 @app.route('/about')
 @login_required
 def about():
