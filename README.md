@@ -45,5 +45,4 @@ Start the server
 Caveats
 -------
 
-* CSRF is currently not addressed
 * The platform does not support tasks with the same score and category right now
