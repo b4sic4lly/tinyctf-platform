@@ -29,6 +29,8 @@ db = None
 lang = None
 config = None
 username_regex = None
+start = None 
+end = None
 
 def is_valid_username(u):
     """Ensures that the username matches username_regex"""
@@ -45,6 +47,35 @@ def login_required(f):
             return redirect(url_for('error', msg='login_required'))
         return f(*args, **kwargs)
     return decorated_function
+
+def before_end(f):
+    """Ensures that actions can only be done before the CTF is over"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        cur_time = int(time.time())
+        if cur_time >= end:
+            return redirect(url_for('error', msg='ctf_over'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def after_start(f):
+    """Ensures that actions can only be done after the CTF has started"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        cur_time = int(time.time())
+        if cur_time < start:
+            return redirect(url_for('error', msg='ctf_not_started'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.context_processor
+def inject_ctftime():
+    st = time.strftime("%Y-%m-%d, %H:%M:%S (%Z)",time.localtime(start))
+    ed = time.strftime("%Y-%m-%d, %H:%M:%S (%Z)",time.localtime(end))
+    return dict(ctf_start=st, ctf_stop=ed)
+
 
 def get_user():
     """Looks up the current user in the database"""
@@ -112,6 +143,7 @@ def login():
     return redirect('/error/invalid_credentials')
 
 @app.route('/register')
+@before_end
 def register():
     """Displays the register form"""
 
@@ -121,6 +153,7 @@ def register():
     return make_response(render) 
 
 @app.route('/register/submit', methods = ['POST'])
+@before_end
 def register_submit():
     """Attempts to register a new user"""
 
@@ -150,6 +183,7 @@ def register_submit():
 
 @app.route('/tasks')
 @login_required
+@after_start
 def tasks():
     """Displays all the tasks in a grid"""
 
@@ -191,6 +225,7 @@ def tasks():
 
 @app.route('/tasks/<category>/<score>')
 @login_required
+@after_start
 def task(category, score):
     """Displays a task with a given category and score"""
 
@@ -214,9 +249,11 @@ def task(category, score):
 
 @app.route('/task/submit', methods = ['POST'])
 @login_required
+@before_end
+@after_start
 def submit():
     """Handles the submission of flags"""
-
+    print "fuck"
     category = request.form['category']
     score = request.form['score']
     flag = request.form['flag']
@@ -243,7 +280,6 @@ def submit():
     return jsonify(result)
 
 @app.route('/scoreboard')
-@login_required
 def scoreboard():
     """Displays the scoreboard"""
 
@@ -274,7 +310,6 @@ def scoreboard_json():
     return jsonify({'standings':data})
 
 @app.route('/about')
-@login_required
 def about():
     """Displays the about menu"""
 
@@ -351,6 +386,9 @@ if __name__ == '__main__':
             PRIMARY KEY (task_id, user_id))''')
 
     app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+    start = config['start']
+    end = config['end']
 
     # Start web server
     app.run(host=config['host'], port=config['port'], 

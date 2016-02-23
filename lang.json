@@ -45,7 +45,9 @@
             "already_registered": "This user is already registered",
             "empty_user": "Empty username is not allowed",
             "task_not_found": "TBD",
-            "invalid_user": "Invalid username"
+            "invalid_user": "Invalid username",
+            "ctf_not_started": "Wait until the CTF starts",
+            "ctf_over": "CTF is over"
         }
     }
 }
