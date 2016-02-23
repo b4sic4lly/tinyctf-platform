@@ -253,7 +253,6 @@ def task(category, score):
 @after_start
 def submit():
     """Handles the submission of flags"""
-    print "fuck"
     category = request.form['category']
     score = request.form['score']
     flag = request.form['flag']
