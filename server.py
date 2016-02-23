@@ -6,6 +6,7 @@ import dataset
 import json
 import random
 import time
+import re
 
 from base64 import b64decode
 from functools import wraps
@@ -24,6 +25,13 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 db = None
 lang = None
 config = None
+username_regex = None
+
+def is_valid_username(u):
+    """Ensures that the username matches username_regex"""
+    if(username_regex.match(u)):
+        return True
+    return False
 
 def login_required(f):
     """Ensures that an user is logged in"""
@@ -65,7 +73,7 @@ def get_flags():
 def error(msg):
     """Displays an error message"""
 
-    if msg in lang:
+    if msg in lang['error']:
         message = lang['error'][msg]
     else:
         message = lang['error']['unknown']
@@ -120,6 +128,9 @@ def register_submit():
 
     if not username:
         return redirect('/error/empty_user')
+
+    if not is_valid_username(username):
+        return redirect('/error/invalid_user')
 
     user_found = db['users'].find_one(username=username)
     if user_found:
@@ -292,6 +303,9 @@ if __name__ == '__main__':
 
     # Connect to database
     db = dataset.connect(config['db'])
+
+    # Compile regex for usernames
+    username_regex = re.compile(config['username_regex'])
 
     # Setup the flags table at first execution
     if 'flags' not in db.tables:
