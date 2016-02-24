@@ -3,6 +3,16 @@ tinyctf-platform
 
 `tinyctf-platform` is yet another open-source (jeopardy style) CTF platform. It is relatively easy to set up and modify. Hopefully it will become even better over time, with other people contributing.
 
+Features
+--------
+
+- Public scoreboard
+- JSON scoreboard at ```/scoreboard.json```
+- Automatic start/end of CTF based on timestamps
+- CSRF protection (can be disabled)
+- Username validation (regex ftw)
+
+
 ![alt text](http://i.imgur.com/dqGeLNM.jpg "tinyctf-platform in action")
 
 Deployment
