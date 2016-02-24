@@ -14,5 +14,6 @@
     "start":0,
     "end":0,
 
+    "enable_csrf_protection": true,
     "debug": true
 }

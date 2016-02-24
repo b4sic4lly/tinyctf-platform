@@ -31,6 +31,7 @@ config = None
 username_regex = None
 start = None 
 end = None
+csrf_enabled = None
 
 def is_valid_username(u):
     """Ensures that the username matches username_regex"""
@@ -72,10 +73,34 @@ def after_start(f):
 
 @app.context_processor
 def inject_ctftime():
+    """Injects start and end date variables into templates"""
+
     st = time.strftime("%Y-%m-%d, %H:%M:%S (%Z)",time.localtime(start))
     ed = time.strftime("%Y-%m-%d, %H:%M:%S (%Z)",time.localtime(end))
     return dict(ctf_start=st, ctf_stop=ed)
 
+@app.before_request
+def csrf_protect():
+    """Checks CSRF token before every request unless csrf_enabled is false"""
+
+    if not csrf_enabled:
+        return 
+    if request.method == "POST":
+        token = session.pop('_csrf_token', None)
+        if not token or token != request.form.get('_csrf_token'):
+            abort(400)
+
+def generate_random_token():
+    """Generates a random CSRF token"""
+
+    return hashlib.sha256(os.urandom(16)).hexdigest()
+
+def generate_csrf_token():
+    """Generates a CSRF token and saves it in the session variable"""
+    
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = generate_random_token()
+    return session['_csrf_token']
 
 def get_user():
     """Looks up the current user in the database"""
@@ -327,20 +352,6 @@ def logout():
     del session['user_id']
     return redirect('/')
 
-@app.before_request
-def csrf_protect():
-    if request.method == "POST":
-        token = session.pop('_csrf_token', None)
-        if not token or token != request.form.get('_csrf_token'):
-            abort(400)
-
-def some_random_string():
-    return hashlib.sha256(os.urandom(16)).hexdigest()
-
-def generate_csrf_token():
-    if '_csrf_token' not in session:
-        session['_csrf_token'] = some_random_string()
-    return session['_csrf_token']
 
 @app.route('/')
 def index():
@@ -359,6 +370,7 @@ if __name__ == '__main__':
     # Load config
     config_str = open('config.json', 'rb').read()
     config = json.loads(config_str)
+    csrf_enabled = config['enable_csrf_protection']
 
     app.secret_key = config['secret_key']
 
