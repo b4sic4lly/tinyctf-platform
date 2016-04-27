@@ -1,9 +1,9 @@
 <div class="landing-page container">
   <div class="row">
-    <div class="task-box col-md-6 col-md-offset-3" 
+    <div class="task-box col-md-6 col-md-offset-3"
       data-category="{{ category|lower }}" data-score="{{ score }}">
       <h1>{{ task.name }}</h1>
-      <h5>({{ category }}{{ score }}, 
+      <h5>({{ category }}{{ score }},
         {{ lang.task.solution_format % solutions }})</h5>
       <br/>
       <p>
@@ -16,16 +16,21 @@
       </p>
       <p>
         <b>{{ lang.task.attachment }}: </b>
-        <a href="{{ url_for('static', 
+        <a href="{{ url_for('static',
           filename='files/'+task.file) }}">{{ task.file }}</a>
       </p>
       <p id="flag-output"></p>
       <input name="_csrf_token" id="_csrf_token" type="hidden" value="{{ csrf_token() }}">
-      <input id="flag-input" type="text" class="form-control" 
-        placeholder="{% if task_done %}{{ lang.task.success }}{% 
+
+      <textarea rows="8" id="solutiontext-input" type="text" class="form-control"
+        placeholder="{% if task_done %}{{ lang.task.success }}{%
+        else %}{{ lang.task.solutiontext_placeholder }}{% endif %}"></textarea>
+
+      <input id="flag-input" type="text" class="form-control"
+        placeholder="{% if task_done %}{{ lang.task.success }}{%
         else %}{{ lang.task.placeholder }}{% endif %}">
-      <button {% if task_done %}disabled{% endif %} id="flag-submission" 
-        type="button" class="btn btn-block 
+      <button  id="flag-submission"
+        type="button" class="btn btn-block
           {% if task_done %}
             btn-success
           {% else %}
@@ -34,7 +39,7 @@
     </div>
   </div>
 </div>
-<span class="lang" data-success="{{ lang.task.success }}" 
+<span class="lang" data-success="{{ lang.task.success }}"
   data-failure="{{ lang.task.failure }}"></span>
-<script src="{{ url_for('static', filename='js/submit.js') }}" 
+<script src="{{ url_for('static', filename='js/submit.js') }}"
     type='text/javascript'></script>

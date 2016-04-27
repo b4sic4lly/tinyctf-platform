@@ -30,7 +30,8 @@
             "failure": "Incorrect flag",
             "solution_format": "solved by %d",
             "no_description": "(none)",
-            "placeholder": "flag{insert_flag_here}"
+            "placeholder": "flag{insert_flag_here}",
+            "solutiontext_placeholder": "Describe your solution (students only)"
         },
         "scoreboard": {
             "title": "Scoreboard",

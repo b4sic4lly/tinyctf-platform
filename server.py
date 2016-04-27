@@ -29,7 +29,7 @@ db = None
 lang = None
 config = None
 username_regex = None
-start = None 
+start = None
 end = None
 csrf_enabled = None
 
@@ -84,7 +84,7 @@ def csrf_protect():
     """Checks CSRF token before every request unless csrf_enabled is false"""
 
     if not csrf_enabled:
-        return 
+        return
     if request.method == "POST":
         token = session.pop('_csrf_token', None)
         if not token or token != request.form.get('_csrf_token'):
@@ -97,7 +97,7 @@ def generate_random_token():
 
 def generate_csrf_token():
     """Generates a CSRF token and saves it in the session variable"""
-    
+
     if '_csrf_token' not in session:
         session['_csrf_token'] = generate_random_token()
     return session['_csrf_token']
@@ -105,7 +105,7 @@ def generate_csrf_token():
 def get_user():
     """Looks up the current user in the database"""
 
-    login = 'user_id' in session    
+    login = 'user_id' in session
     if login:
         return (True, db['users'].find_one(id=session['user_id']))
 
@@ -114,8 +114,8 @@ def get_user():
 def get_task(category, score):
     """Finds a task with a given category and score"""
 
-    task = db.query('''select t.* from tasks t, categories c, cat_task ct 
-        where t.id = ct.task_id and c.id = ct.cat_id 
+    task = db.query('''select t.* from tasks t, categories c, cat_task ct
+        where t.id = ct.task_id and c.id = ct.cat_id
         and t.score=:score and lower(c.short_name)=:cat''',
         score=score, cat=category)
     return list(task)[0]
@@ -123,12 +123,12 @@ def get_task(category, score):
 def get_flags():
     """Returns the flags of the current user"""
 
-    flags = db.query('''select f.task_id from flags f 
+    flags = db.query('''select f.task_id from flags f
         where f.user_id = :user_id''',
         user_id=session['user_id'])
     return [f['task_id'] for f in list(flags)]
 
-@app.route('/error/<msg>')    
+@app.route('/error/<msg>')
 def error(msg):
     """Displays an error message"""
 
@@ -139,7 +139,7 @@ def error(msg):
 
     login, user = get_user()
 
-    render = render_template('frame.html', lang=lang, page='error.html', 
+    render = render_template('frame.html', lang=lang, page='error.html',
         message=message, login=login, user=user)
     return make_response(render)
 
@@ -173,9 +173,9 @@ def register():
     """Displays the register form"""
 
     # Render template
-    render = render_template('frame.html', lang=lang, 
+    render = render_template('frame.html', lang=lang,
         page='register.html', login=False)
-    return make_response(render) 
+    return make_response(render)
 
 @app.route('/register/submit', methods = ['POST'])
 @before_end
@@ -196,8 +196,8 @@ def register_submit():
     user_found = db['users'].find_one(username=username)
     if user_found:
         return redirect('/error/already_registered')
-            
-    new_user = dict(hidden=0, username=username, 
+
+    new_user = dict(hidden=0, username=username,
         password=generate_password_hash(password))
     db['users'].insert(new_user)
 
@@ -217,8 +217,8 @@ def tasks():
 
     categories = db['categories']
 
-    tasks = db.query('''select c.id as cat_id, t.id as id, c.short_name, 
-        t.score, t.row from categories c, tasks t, cat_task c_t 
+    tasks = db.query('''select c.id as cat_id, t.id as id, c.short_name,
+        t.score, t.row from categories c, tasks t, cat_task c_t
         where c.id = c_t.cat_id and t.id = c_t.task_id''')
     tasks = list(tasks)
 
@@ -243,10 +243,10 @@ def tasks():
         grid.append(row_tasks)
 
     # Render template
-    render = render_template('frame.html', lang=lang, page='tasks.html', 
-        login=login, user=user, categories=categories, grid=grid, 
+    render = render_template('frame.html', lang=lang, page='tasks.html',
+        login=login, user=user, categories=categories, grid=grid,
         flags=flags)
-    return make_response(render) 
+    return make_response(render)
 
 @app.route('/tasks/<category>/<score>')
 @login_required
@@ -267,7 +267,7 @@ def task(category, score):
     solutions = len(list(solutions))
 
     # Render template
-    render = render_template('frame.html', lang=lang, page='task.html', 
+    render = render_template('frame.html', lang=lang, page='task.html',
         task_done=task_done, login=login, solutions=solutions,
         user=user, category=category, task=task, score=score)
     return make_response(render)
@@ -281,6 +281,7 @@ def submit():
     category = request.form['category']
     score = request.form['score']
     flag = request.form['flag']
+    solutiontext = request.form['solutiontext']
 
     login, user = get_user()
 
@@ -295,9 +296,21 @@ def submit():
         timestamp = int(time.time() * 1000)
 
         # Insert flag
-        new_flag = dict(task_id=task['id'], user_id=session['user_id'], 
-            score=score, timestamp=timestamp)
+        new_flag = dict(task_id=task['id'], user_id=session['user_id'],
+            score=score, timestamp=timestamp, solutiontext=solutiontext)
         db['flags'].insert(new_flag)
+
+        result['success'] = True
+
+    # update of the submission
+    if task_done and task['flag'] == b64decode(flag):
+        timestamp = int(time.time() * 1000)
+
+        # Insert flag
+        new_flag = dict(task_id=task['id'], user_id=session['user_id'],
+            score=score, timestamp=timestamp, solutiontext=solutiontext)
+        db['flags'].delete(task_id=task['id'], user_id=session['user_id'])
+        db['flags'].insert(new_flag, task_id=task['id'], user_id=session['user_id'])
 
         result['success'] = True
 
@@ -308,17 +321,17 @@ def scoreboard():
     """Displays the scoreboard"""
 
     login, user = get_user()
-    scores = db.query('''select u.username, ifnull(sum(f.score), 0) as score, 
-        max(timestamp) as last_submit from users u left join flags f 
-        on u.id = f.user_id where u.hidden = 0 group by u.username 
+    scores = db.query('''select u.username, ifnull(sum(f.score), 0) as score,
+        max(timestamp) as last_submit from users u left join flags f
+        on u.id = f.user_id where u.hidden = 0 group by u.username
         order by score desc, last_submit asc''')
 
     scores = list(scores)
 
     # Render template
-    render = render_template('frame.html', lang=lang, page='scoreboard.html', 
+    render = render_template('frame.html', lang=lang, page='scoreboard.html',
         login=login, user=user, scores=scores)
-    return make_response(render) 
+    return make_response(render)
 
 @app.route("/scoreboard.json")
 def scoreboard_json():
@@ -329,8 +342,8 @@ def scoreboard_json():
     scores = list(scores)
     for i, s in enumerate(scores):
         s['pos'] = i + 1
-        
-    data = map(dict,scores) 
+
+    data = map(dict,scores)
     return jsonify({'standings':data})
 
 @app.route('/about')
@@ -340,9 +353,9 @@ def about():
     login, user = get_user()
 
     # Render template
-    render = render_template('frame.html', lang=lang, page='about.html', 
+    render = render_template('frame.html', lang=lang, page='about.html',
         login=login, user=user)
-    return make_response(render) 
+    return make_response(render)
 
 @app.route('/logout')
 @login_required
@@ -360,7 +373,7 @@ def index():
     login, user = get_user()
 
     # Render template
-    render = render_template('frame.html', lang=lang, 
+    render = render_template('frame.html', lang=lang,
         page='main.html', login=login, user=user)
     return make_response(render)
 
@@ -390,10 +403,10 @@ if __name__ == '__main__':
     # Setup the flags table at first execution
     if 'flags' not in db.tables:
         db.query('''create table flags (
-            task_id INTEGER, 
-            user_id INTEGER, 
-            score INTEGER, 
-            timestamp BIGINT, 
+            task_id INTEGER,
+            user_id INTEGER,
+            score INTEGER,
+            timestamp BIGINT,
             PRIMARY KEY (task_id, user_id))''')
 
     app.jinja_env.globals['csrf_token'] = generate_csrf_token
@@ -402,6 +415,6 @@ if __name__ == '__main__':
     end = config['end']
 
     # Start web server
-    app.run(host=config['host'], port=config['port'], 
+    app.run(host=config['host'], port=config['port'],
         debug=config['debug'], threaded=True)
 

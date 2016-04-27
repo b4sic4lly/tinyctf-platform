@@ -13,11 +13,12 @@ function submit() {
     var score = $(".task-box").data("score");
     var flag = $("#flag-input").val();
     var csrf = $("#_csrf_token").val();
+    var solutiontext = $("#solutiontext-input").val();
 
     $.ajax({
         url: "/task/submit",
         method: "POST",
-        data: {"category": cat, "score":score, "flag": btoa(flag), "_csrf_token": csrf}
+        data: {"category": cat, "score":score, "flag": btoa(flag), "_csrf_token": csrf, "solutiontext": solutiontext}
     }).done(function(data) {
         $("#_csrf_token").val(data['csrf']);
         $("#flag-output").fadeIn(900);
