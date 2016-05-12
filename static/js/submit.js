@@ -2,12 +2,12 @@ $("#flag-submission").click(function() {
     submit();
 });
 
-$(document).keypress(function( event ) {
+/*$(document).keypress(function( event ) {
     if(event.which == 13) {
         event.preventDefault();
         submit();
     }
-});
+});*/
 function submit() {
     var cat = $(".task-box").data("category");
     var score = $(".task-box").data("score");
